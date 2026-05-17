@@ -1,7 +1,6 @@
 from flask import Flask, render_template_string, request
 import os
 import urllib.request
-import urllib.parse
 import json
 
 app = Flask(__name__)
@@ -212,85 +211,4 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
-    <header class="navbar">
-        <div class="nav-links">
-            <a href="#" class="active">Campanha</a>
-            <a href="#">Conteúdo</a>
-            <a href="#">Recursos</a>
-            <a href="#">Estatísticas</a>
-        </div>
-    </header>
-
-    <div class="main-container">
-        <div class="search-wrapper">
-            <form action="/" method="POST" class="search-form">
-                <input type="text" name="query" placeholder="Faça uma pergunta para a Inteligência Artificial..." value="{{ query }}" required>
-                <button type="submit" class="search-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                </button>
-            </form>
-        </div>
-
-        <div class="shortcuts-container">
-            <div class="shortcut-item">
-                <div class="shortcut-icon">🤖</div>
-                <span>IA Ativa</span>
-            </div>
-            <div class="shortcut-item">
-                <div class="shortcut-icon">⚡</div>
-                <span>Ultra Rápido</span>
-            </div>
-            <div class="shortcut-item">
-                <div class="shortcut-icon">✨</div>
-                <span>Original</span>
-            </div>
-        </div>
-
-        {% if resposta_direta %}
-        <div class="result-card">
-            <div class="data-badge">Modelo Cognitivo Ativo</div>
-            <h3 class="response-title">Resposta da Inteligência Artificial</h3>
-            <p class="response-text">{{ resposta_direta }}</p>
-        </div>
-        {% endif %}
-    </div>
-</body>
-</html>
-"""
-
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    resposta_direta = ""
-    query = ""
-    if request.method == 'POST':
-        query = request.form.get('query')
-        if query:
-            api_key = os.environ.get("GEMINI_API_KEY")
-            
-            if not api_key:
-                resposta_direta = "Erro do Sistema: A variável GEMINI_API_KEY não foi encontrada no painel do Render."
-            else:
-                try:
-                    # Rota HTTP padrão estável com o modelo correto v1
-                    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
-                    
-                    body = {"contents": [{"parts": [{"text": query}]}]}
-                    data = json.dumps(body).encode('utf-8')
-                    
-                    req = urllib.request.Request(
-                        url, 
-                        data=data, 
-                        headers={'Content-Type': 'application/json'},
-                        method='POST'
-                    )
-                    
-                    with urllib.request.urlopen(req, timeout=15) as response:
-                        resultado = json.loads(response.read().decode('utf-8'))
-                        resposta_direta = resultado['candidates'][0]['content']['parts'][0]['text']
-                except Exception as e:
-                    resposta_direta = f"Ocorreu um erro ao processar sua pergunta através da malha neural: {str(e)}"
-
-    return render_template_string(HTML_TEMPLATE, resposta_direta=resposta_direta, query=query)
-
-if __name__ == '__main__':
-    app.run(debug=False)
+    <header class="
