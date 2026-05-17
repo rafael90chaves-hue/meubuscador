@@ -271,8 +271,9 @@ def home():
                 resposta_direta = "Erro do Sistema: A variável GEMINI_API_KEY não foi encontrada no painel do Render."
             else:
                 try:
-                    # Conexão direta via API Rest (Funciona em QUALQUEER versão do Python!)
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    # Rota HTTP padrão estável com o modelo correto v1
+                    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    
                     body = {"contents": [{"parts": [{"text": query}]}]}
                     data = json.dumps(body).encode('utf-8')
                     
