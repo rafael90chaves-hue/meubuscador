@@ -1,6 +1,8 @@
 from flask import Flask, render_template_string, request
 import os
-import google.generativeai as genai
+import urllib.request
+import urllib.parse
+import json
 
 app = Flask(__name__)
 
@@ -266,17 +268,26 @@ def home():
             api_key = os.environ.get("GEMINI_API_KEY")
             
             if not api_key:
-                resposta_direta = "Erro do Sistema: A chave de conexão com o cérebro da IA (GEMINI_API_KEY) não foi detectada no painel do Render."
+                resposta_direta = "Erro do Sistema: A variável GEMINI_API_KEY não foi encontrada no painel do Render."
             else:
                 try:
-                    # Configura a biblioteca estável com a sua chave
-                    genai.configure(api_key=api_key)
-                    # Usa o modelo ultra-compatível gemini-1.5-flash
-                    model = genai.GenerativeModel('gemini-1.5-flash')
-                    response = model.generate_content(query)
-                    resposta_direta = response.text
+                    # Conexão direta via API Rest (Funciona em QUALQUEER versão do Python!)
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    body = {"contents": [{"parts": [{"text": query}]}]}
+                    data = json.dumps(body).encode('utf-8')
+                    
+                    req = urllib.request.Request(
+                        url, 
+                        data=data, 
+                        headers={'Content-Type': 'application/json'},
+                        method='POST'
+                    )
+                    
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        resultado = json.loads(response.read().decode('utf-8'))
+                        resposta_direta = resultado['candidates'][0]['content']['parts'][0]['text']
                 except Exception as e:
-                    resposta_direta = f"Ocorreu um erro ao processar sua pergunta: {str(e)}"
+                    resposta_direta = f"Ocorreu um erro ao processar sua pergunta através da malha neural: {str(e)}"
 
     return render_template_string(HTML_TEMPLATE, resposta_direta=resposta_direta, query=query)
 
