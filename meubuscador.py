@@ -265,15 +265,14 @@ def home():
         query = request.form.get('query')
         if query:
             raw_key = os.environ.get("GEMINI_API_KEY", "")
-            # Remove qualquer espaço ou quebra de linha acidental da chave
             api_key = raw_key.strip()
             
             if not api_key:
                 resposta_direta = "Erro: A variável GEMINI_API_KEY está vazia ou não foi configurada no Render."
             else:
                 try:
-                    # Endpoint v1beta simplificado para requisições brutas diretas
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    # Rota alterada cirurgicamente para a versão estável 'v1' exigida pelo modelo
+                    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
                     
                     body = {
                         "contents": [{
@@ -296,14 +295,13 @@ def home():
                         resultado = json.loads(response.read().decode('utf-8'))
                         resposta_direta = resultado['candidates'][0]['content']['parts'][0]['text']
                 except urllib.error.HTTPError as http_err:
-                    # Se der erro do Google, captura o motivo exato enviado por eles
                     try:
                         erro_corpo = http_err.read().decode('utf-8')
                         detalhes = json.loads(erro_corpo)
                         msg_google = detalhes['error']['message']
-                        resposta_direta = f"O Google recusou a conexão (Erro {http_err.code}): {msg_google}. Verifique se sua chave da API está correta e ativa."
+                        resposta_direta = f"O Google recusou a conexão (Erro {http_err.code}): {msg_google}"
                     except:
-                        resposta_direta = f"Erro HTTP {http_err.code}. Verifique sua chave de API no painel do Render."
+                        resposta_direta = f"Erro HTTP {http_err.code}. Verifique os logs ou os parâmetros."
                 except Exception as e:
                     resposta_direta = f"Ocorreu um erro de rede: {str(e)}"
 
