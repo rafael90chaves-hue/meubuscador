@@ -268,20 +268,13 @@ def home():
             api_key = raw_key.strip()
             
             if not api_key:
-                resposta_direta = "Erro: A variável GEMINI_API_KEY está vazia ou não foi configurada no Render."
+                resposta_direta = "Erro: A variável GEMINI_API_KEY está vazia no Render."
             else:
+                # Vamos tentar a rota v1beta com a nomenclatura clássica exigida por requisições brutas HTTP
                 try:
-                    # Rota atualizada com o codinome de produção oficial: gemini-1.5-flash-latest
-                    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
                     
-                    body = {
-                        "contents": [{
-                            "parts": [{
-                                "text": str(query)
-                            }]
-                        }]
-                    }
-                    
+                    body = {"contents": [{"parts": [{"text": str(query)}]}]}
                     data = json.dumps(body).encode('utf-8')
                     
                     req = urllib.request.Request(
@@ -294,16 +287,24 @@ def home():
                     with urllib.request.urlopen(req, timeout=15) as response:
                         resultado = json.loads(response.read().decode('utf-8'))
                         resposta_direta = resultado['candidates'][0]['content']['parts'][0]['text']
-                except urllib.error.HTTPError as http_err:
+                except Exception:
+                    # Se falhar, faz o fallback automático para a rota estável v1 com o modelo universal
                     try:
-                        erro_corpo = http_err.read().decode('utf-8')
-                        detalhes = json.loads(erro_corpo)
-                        msg_google = detalhes['error']['message']
-                        resposta_direta = f"O Google recusou a conexão (Erro {http_err.code}): {msg_google}"
-                    except:
-                        resposta_direta = f"Erro HTTP {http_err.code} ao contatar os servidores da IA."
-                except Exception as e:
-                    resposta_direta = f"Ocorreu um erro de rede: {str(e)}"
+                        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
+                        body = {"contents": [{"parts": [{"text": str(query)}]}]}
+                        data = json.dumps(body).encode('utf-8')
+                        
+                        req = urllib.request.Request(
+                            url, 
+                            data=data, 
+                            headers={'Content-Type': 'application/json'},
+                            method='POST'
+                        )
+                        with urllib.request.urlopen(req, timeout=15) as response:
+                            resultado = json.loads(response.read().decode('utf-8'))
+                            resposta_direta = resultado['candidates'][0]['content']['parts'][0]['text']
+                    except Exception as final_e:
+                        resposta_direta = f"Conexão recusada pela malha da API externa. Detalhes: {str(final_e)}"
 
     return render_template_string(HTML_TEMPLATE, resposta_direta=resposta_direta, query=query)
 
