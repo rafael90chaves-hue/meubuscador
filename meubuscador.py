@@ -271,8 +271,8 @@ def home():
                 resposta_direta = "Erro: A variável GEMINI_API_KEY está vazia ou não foi configurada no Render."
             else:
                 try:
-                    # Rota alterada cirurgicamente para a versão estável 'v1' exigida pelo modelo
-                    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    # Rota atualizada com o codinome de produção oficial: gemini-1.5-flash-latest
+                    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
                     
                     body = {
                         "contents": [{
@@ -301,7 +301,7 @@ def home():
                         msg_google = detalhes['error']['message']
                         resposta_direta = f"O Google recusou a conexão (Erro {http_err.code}): {msg_google}"
                     except:
-                        resposta_direta = f"Erro HTTP {http_err.code}. Verifique os logs ou os parâmetros."
+                        resposta_direta = f"Erro HTTP {http_err.code} ao contatar os servidores da IA."
                 except Exception as e:
                     resposta_direta = f"Ocorreu um erro de rede: {str(e)}"
 
