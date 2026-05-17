@@ -1,6 +1,6 @@
 from flask import Flask, render_template_string, request
 import os
-from google import genai
+import google.generativeai as genai
 
 app = Flask(__name__)
 
@@ -200,7 +200,7 @@ HTML_TEMPLATE = """
             font-size: 15px; 
             color: #c4c4cc; 
             line-height: 1.7; 
-            white-space: pre-line; /* Mantém as quebras de linha da IA */
+            white-space: pre-line;
         }
         @media (max-width: 600px) {
             .navbar { display: none; }
@@ -263,19 +263,17 @@ def home():
     if request.method == 'POST':
         query = request.form.get('query')
         if query:
-            # Obtém a chave da API salva nas configurações do Render
             api_key = os.environ.get("GEMINI_API_KEY")
             
             if not api_key:
-                resposta_direta = "Erro do Sistema: A chave de conexão com o cérebro da IA (GEMINI_API_KEY) não foi configurada no painel do Render."
+                resposta_direta = "Erro do Sistema: A chave de conexão com o cérebro da IA (GEMINI_API_KEY) não foi detectada no painel do Render."
             else:
                 try:
-                    # Conecta e gera a resposta usando o modelo oficial e estável do Google
-                    client = genai.Client(api_key=api_key)
-                    response = client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=query
-                    )
+                    # Configura a biblioteca estável com a sua chave
+                    genai.configure(api_key=api_key)
+                    # Usa o modelo ultra-compatível gemini-1.5-flash
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    response = model.generate_content(query)
                     resposta_direta = response.text
                 except Exception as e:
                     resposta_direta = f"Ocorreu um erro ao processar sua pergunta: {str(e)}"
