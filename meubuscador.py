@@ -211,4 +211,103 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
-    <header class="
+    <header class="navbar">
+        <div class="nav-links">
+            <a href="#" class="active">Campanha</a>
+            <a href="#">Conteúdo</a>
+            <a href="#">Recursos</a>
+            <a href="#">Estatísticas</a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="search-wrapper">
+            <form action="/" method="POST" class="search-form">
+                <input type="text" name="query" placeholder="Faça uma pergunta para a Inteligência Artificial..." value="{{ query }}" required>
+                <button type="submit" class="search-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+            </form>
+        </div>
+
+        <div class="shortcuts-container">
+            <div class="shortcut-item">
+                <div class="shortcut-icon">🤖</div>
+                <span>IA Ativa</span>
+            </div>
+            <div class="shortcut-item">
+                <div class="shortcut-icon">⚡</div>
+                <span>Ultra Rápido</span>
+            </div>
+            <div class="shortcut-item">
+                <div class="shortcut-icon">✨</div>
+                <span>Original</span>
+            </div>
+        </div>
+
+        {% if resposta_direta %}
+        <div class="result-card">
+            <div class="data-badge">Modelo Cognitivo Ativo</div>
+            <h3 class="response-title">Resposta da Inteligência Artificial</h3>
+            <p class="response-text">{{ resposta_direta }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
+
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    resposta_direta = ""
+    query = ""
+    if request.method == 'POST':
+        query = request.form.get('query')
+        if query:
+            raw_key = os.environ.get("GEMINI_API_KEY", "")
+            # Remove qualquer espaço ou quebra de linha acidental da chave
+            api_key = raw_key.strip()
+            
+            if not api_key:
+                resposta_direta = "Erro: A variável GEMINI_API_KEY está vazia ou não foi configurada no Render."
+            else:
+                try:
+                    # Endpoint v1beta simplificado para requisições brutas diretas
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    
+                    body = {
+                        "contents": [{
+                            "parts": [{
+                                "text": str(query)
+                            }]
+                        }]
+                    }
+                    
+                    data = json.dumps(body).encode('utf-8')
+                    
+                    req = urllib.request.Request(
+                        url, 
+                        data=data, 
+                        headers={'Content-Type': 'application/json'},
+                        method='POST'
+                    )
+                    
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        resultado = json.loads(response.read().decode('utf-8'))
+                        resposta_direta = resultado['candidates'][0]['content']['parts'][0]['text']
+                except urllib.error.HTTPError as http_err:
+                    # Se der erro do Google, captura o motivo exato enviado por eles
+                    try:
+                        erro_corpo = http_err.read().decode('utf-8')
+                        detalhes = json.loads(erro_corpo)
+                        msg_google = detalhes['error']['message']
+                        resposta_direta = f"O Google recusou a conexão (Erro {http_err.code}): {msg_google}. Verifique se sua chave da API está correta e ativa."
+                    except:
+                        resposta_direta = f"Erro HTTP {http_err.code}. Verifique sua chave de API no painel do Render."
+                except Exception as e:
+                    resposta_direta = f"Ocorreu um erro de rede: {str(e)}"
+
+    return render_template_string(HTML_TEMPLATE, resposta_direta=resposta_direta, query=query)
+
+if __name__ == '__main__':
+    app.run(debug=False)
